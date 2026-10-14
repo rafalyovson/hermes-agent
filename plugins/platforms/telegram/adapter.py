@@ -7040,7 +7040,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             reply_expected = bool(
                 self._message_mentions_bot(message)
                 or (not self._sender_is_other_bot(message) and self._is_reply_to_bot(message))
-                or self._message_matches_mention_patterns(message)
+                or (not self._sender_is_other_bot(message) and self._message_matches_mention_patterns(message))
                 or (message.text or "").lstrip().startswith("/")
             )
             if self._sender_is_other_bot(message) and self._is_silence_warning(message):

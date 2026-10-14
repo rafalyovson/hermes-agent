@@ -15,7 +15,7 @@ def _event(text, *, is_bot, caption=False):
         PlatformConfig(
             enabled=True,
             token="999:offline-fixture",
-            extra={"free_response_chats": ["-10042"], "allowed_topics": []},
+            extra={"free_response_chats": ["-10042"], "allowed_topics": [], "mention_patterns": ["wake"]},
         )
     )
     adapter._bot = SimpleNamespace(id=999, username="fixturebot")
@@ -55,3 +55,12 @@ def test_peer_bot_warning_does_not_restart_a_required_reply_loop(text):
 )
 def test_explicit_human_question_requires_a_reply_even_when_quoting_warning(text, caption):
     assert _event(text, is_bot=False, caption=caption).reply_expected is True
+
+
+@pytest.mark.parametrize(
+    "text,is_bot,expected",
+    [("wake explain", False, True), ("wake peer chatter", True, False),
+     ("@fixturebot explain", True, True)],
+)
+def test_keyword_wakeups_are_human_scoped_but_direct_peer_mentions_still_work(text, is_bot, expected):
+    assert _event(text, is_bot=is_bot).reply_expected is expected
