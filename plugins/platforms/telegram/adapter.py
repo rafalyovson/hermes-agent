@@ -7097,12 +7097,24 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         from plugins.platforms.telegram.telegram_context import group_identity_prompt
         _chat_id_str = str(chat.id)
         channel_prompt = resolve_channel_prompt(self.config.extra, thread_id_str or _chat_id_str, _chat_id_str if thread_id_str else None)
+        # Free-response chatter may be relevant, but it does not owe a reply. Let
+        # intentional silence stand instead of turning it into bot-to-bot warnings.
+        reply_expected = None
+        if chat_type == "group" and (
+            _chat_id_str in self._telegram_free_response_chats()
+            or self._telegram_is_free_response_topic(message)
+        ):
+            reply_expected = bool(
+                self._message_mentions_bot(message) or self._is_reply_to_bot(message)
+                or self._message_matches_mention_patterns(message)
+                or (message.text or "").lstrip().startswith("/")
+            )
         return MessageEvent(
             text=expand_link_entities(message), message_type=msg_type, source=source, raw_message=message,
             message_id=str(message.message_id), platform_update_id=update_id,
             reply_to_message_id=reply_to_id, reply_to_text=reply_to_text, auto_skill=topic_skill,
             channel_prompt=group_identity_prompt(self, message, channel_prompt),
-            timestamp=message.date)
+            reply_expected=reply_expected, timestamp=message.date)
 
     # -- Message reactions (processing lifecycle) --
 
