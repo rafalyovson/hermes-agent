@@ -6295,6 +6295,10 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         user_id = getattr(from_user, "id", None)
         return bot_id is not None and user_id is not None and bot_id == user_id
 
+    def _is_silence_warning(self, message: Message) -> bool:
+        text = message.text or message.caption or ""
+        return "returned only a silence marker" in text or "只返回了静默标记" in text
+
     def _sender_is_other_bot(self, message: Message) -> bool:
         """True when the sender is a bot other than this one (this bot's own echoes are already
         filtered by ``_is_own_message``)."""
@@ -7039,6 +7043,8 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
                 or self._message_matches_mention_patterns(message)
                 or (message.text or "").lstrip().startswith("/")
             )
+            if self._sender_is_other_bot(message) and self._is_silence_warning(message):
+                reply_expected = False
         return MessageEvent(
             text=expand_link_entities(message), message_type=msg_type, source=source, raw_message=message,
             message_id=str(message.message_id), platform_update_id=update_id,
